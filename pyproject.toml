@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=65.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mbu_process_dashboard_shared_components"   # 👈 must match the PyPI project name
+version = "1.0.0"
+authors = [
+  { name="MBU", email="rpa@mbu.aarhus.dk" },
+]
+description = "Repo containing functionality related to the process dashboard"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+]
+license = "MIT"
+dependencies = [
+  "mbu-rpa-core",
+  "cryptography >= 43.0.0",
+  "pyodbc >= 5.1.0",
+  "python-dateutil == 2.9.*",
+  "openpyxl >= 3.1.2",
+  "pandas >= 2.2.3",
+  "office365-rest-python-client",
+  "pillow",
+  "ruff",
+  "sqlalchemy >= 2.0.20",
+  "sqlalchemy[asyncio] >= 2.0.20",
+  "psutil",
+]
