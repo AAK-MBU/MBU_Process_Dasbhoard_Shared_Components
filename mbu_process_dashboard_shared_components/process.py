@@ -1,3 +1,5 @@
+""" Functions to interact with processes """
+
 import logging
 
 logger = logging.getLogger(__name__)

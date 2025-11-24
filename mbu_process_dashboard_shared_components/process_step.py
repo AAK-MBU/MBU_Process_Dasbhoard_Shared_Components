@@ -1,9 +1,11 @@
+""" Functions to interact with process steps """
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def get_dashboard_step_run_id(client, process_id: int, step_name: str) -> int:
+def get_dashboard_step_id(client, process_id: int, step_name: str) -> int:
     """
     Return a step ID based on process_id + step name.
 

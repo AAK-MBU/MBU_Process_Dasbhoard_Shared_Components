@@ -1,3 +1,5 @@
+""" Functions to interact with process runs """
+
 import logging
 
 from .process import find_process_id_and_steps
@@ -28,28 +30,7 @@ def get_dashboard_run_id(client, process_id: int, cpr: str) -> int:
     return res.json()["items"][0]["id"]
 
 
-def find_entity_process_runs(client, process_id: int, entity_id: str):
-    """
-    Return all process runs for a specific entity.
-
-    Args:
-        client (ProcessDashboardClient)
-        process_id (int)
-        entity_id (str)
-
-    Returns:
-        list: List of process run dicts.
-    """
-
-    res = client.get(
-        f"runs/?process_id={process_id}&entity_id={entity_id}"
-        "&order_by=created_at&sort_direction=desc&page=1&size=100"
-    )
-
-    return res.json().get("items", [])
-
-
-def create_process_run(client, process_name: str, meta: dict):
+def create_dashboard_run(client, process_name: str, meta: dict):
     """
     Create a new process run.
 
