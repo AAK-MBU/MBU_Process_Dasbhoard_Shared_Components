@@ -5,10 +5,47 @@ from datetime import datetime, timezone
 from mbu_rpa_core.exceptions import BusinessError
 
 from .process import get_dashboard_process_id
-from .process_step import get_dashboard_step_run_id
+from .process_step import get_dashboard_step_id
 from .process_run import get_dashboard_run_id
 
 logger = logging.getLogger(__name__)
+
+
+def get_step_run_id_for_process_step_cpr(client, process_name: str, step_name: str, cpr: str) -> int:
+    """
+    Look up a step-run ID using:
+        • process name
+        • step name
+        • CPR number
+
+    Args:
+        client (ProcessDashboardClient)
+        process_name (str)
+        step_name (str)
+        cpr (str)
+
+    Returns:
+        int: Step run ID.
+
+    Raises:
+        RuntimeError: If the step-run does not exist.
+    """
+
+    logger.info("Finding step-run ID for %s / %s / %s", process_name, step_name, cpr)
+
+    process_id = get_dashboard_process_id(client, process_name)
+    step_id = get_dashboard_step_id(client, process_id, step_name)
+    run_id = get_dashboard_run_id(client, process_id, cpr)
+
+    res = client.get(f"step-runs/run/{run_id}/step/{step_id}?include_deleted=false")
+    step_run = res.json()
+
+    step_run_id = step_run.get("id")
+
+    if step_run_id is None:
+        raise RuntimeError("Step run ID not found for process/step/CPR combination.")
+
+    return step_run_id
 
 
 def build_step_run_update(status: str, failure: Exception | None = None) -> dict:
@@ -74,40 +111,3 @@ def update_dashboard_step_run_by_id(client, step_run_id: int, update_data: dict)
     res = client.patch(f"step-runs/{step_run_id}", json=update_data)
 
     return res.json(), res.status_code
-
-
-def get_step_run_id_for_process_step_cpr(client, process_name: str, step_name: str, cpr: str) -> int:
-    """
-    Look up a step-run ID using:
-        • process name
-        • step name
-        • CPR number
-
-    Args:
-        client (ProcessDashboardClient)
-        process_name (str)
-        step_name (str)
-        cpr (str)
-
-    Returns:
-        int: Step run ID.
-
-    Raises:
-        RuntimeError: If the step-run does not exist.
-    """
-
-    logger.info("Finding step-run ID for %s / %s / %s", process_name, step_name, cpr)
-
-    process_id = get_dashboard_process_id(client, process_name)
-    run_id = get_dashboard_run_id(client, process_id, cpr)
-    step_id = get_dashboard_step_run_id(client, process_id, step_name)
-
-    res = client.get(f"step-runs/run/{run_id}/step/{step_id}?include_deleted=false")
-    step_run = res.json()
-
-    step_run_id = step_run.get("id")
-
-    if step_run_id is None:
-        raise RuntimeError("Step run ID not found for process/step/CPR combination.")
-
-    return step_run_id
