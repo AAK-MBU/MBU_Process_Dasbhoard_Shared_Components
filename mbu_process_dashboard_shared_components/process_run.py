@@ -49,8 +49,6 @@ def create_dashboard_run(client, process_name: str, meta: dict):
 
     process_id, _ = find_process_id_and_steps(client, process_name)
 
-    logger
-
     payload = {
         "entity_id": meta.get("cpr"),
         "entity_name": meta.get("name"),
