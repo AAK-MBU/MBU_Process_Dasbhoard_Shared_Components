@@ -19,9 +19,13 @@ def find_process_id_and_steps(client, process_name: str):
         tuple: (process_id (str|None), steps (list))
     """
 
+    logger.info("Inside find_process_id_and_steps() - finding for process_name: %s", process_name)
+
     res = client.get("processes/?page=1&size=100")
 
     items = res.json().get("items", [])
+
+    logger.info("Printing fetched items in find_process_id_and_steps(): %s", items)
 
     for row in items:
         if row.get("name") == process_name:
