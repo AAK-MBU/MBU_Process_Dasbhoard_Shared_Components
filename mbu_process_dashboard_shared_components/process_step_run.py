@@ -4,8 +4,7 @@ from datetime import datetime, timezone
 
 from mbu_rpa_core.exceptions import BusinessError
 
-from .process import get_dashboard_process_id
-from .process_step import get_dashboard_step_id
+from .process import find_process_id_and_steps
 from .process_run import get_dashboard_run_id
 
 logger = logging.getLogger(__name__)
@@ -31,10 +30,16 @@ def get_step_run_id_for_process_step_cpr(client, process_name: str, step_name: s
         RuntimeError: If the step-run does not exist.
     """
 
+    step_id = 0
+
     logger.info("Finding step-run ID for %s / %s / %s", process_name, step_name, cpr)
 
-    process_id = get_dashboard_process_id(client, process_name)
-    step_id = get_dashboard_step_id(client, process_id, step_name)
+    process_id, process_steps = find_process_id_and_steps(client, process_name)
+
+    for step in process_steps:
+        if step.get("name") == step_name:
+            step_id = step.get("id")
+
     run_id = get_dashboard_run_id(client, process_id, cpr)
 
     res = client.get(f"step-runs/run/{run_id}/step/{step_id}?include_deleted=false")
