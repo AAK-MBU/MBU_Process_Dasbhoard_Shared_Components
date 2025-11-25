@@ -24,7 +24,7 @@ def find_process_id_and_steps(client, process_name: str):
     res = client.get("processes/?page=1&size=100")
 
     logger.info("Printing full res for get all processes api call: %s", res)
-    logger.info("Printing full res.status_code for get all processes api call: %s", res.status_code())
+    logger.info("Printing full res.status_code for get all processes api call: %s", res.status_code)
     logger.info("Printing full res.json() for get all processes api call: %s", res.json())
 
     items = res.json().get("items", [])
