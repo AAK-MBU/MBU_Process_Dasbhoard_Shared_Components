@@ -56,6 +56,8 @@ class ProcessDashboardClient:
 
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
+        logger.info("Printing the url for the requested GET API-call: %s", url)
+
         return requests.get(url, headers=self.headers, timeout=timeout)
 
     def post(self, endpoint: str, json: dict, timeout: int = 30):
@@ -72,6 +74,8 @@ class ProcessDashboardClient:
 
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
+        logger.info("Printing the url for the requested POST API-call: %s", url)
+
         return requests.post(url, headers=self.headers, json=json, timeout=timeout)
 
     def patch(self, endpoint: str, json: dict, timeout: int = 30):
@@ -87,5 +91,7 @@ class ProcessDashboardClient:
         """
 
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
+
+        logger.info("Printing the url for the requested PATCH API-call: %s", url)
 
         return requests.patch(url, headers=self.headers, json=json, timeout=timeout)
