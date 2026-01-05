@@ -101,18 +101,53 @@ def build_step_run_update(status: str, failure: Exception | None = None) -> dict
 def update_dashboard_step_run_by_id(client, step_run_id: int, update_data: dict):
     """
     PATCH update a step-run entry in the dashboard.
-
-    Args:
-        client (ProcessDashboardClient)
-        step_run_id (int)
-        update_data (dict)
-
-    Returns:
-        tuple: (response_json, status_code)
     """
+
+    retry_count = 3
+    attempt = 1
 
     logger.info("Updating step run ID %s", step_run_id)
 
-    res = client.patch(f"step-runs/{step_run_id}", json=update_data)
+    while attempt <= retry_count:
+        try:
+            res = client.patch(f"step-runs/{step_run_id}", json=update_data)
 
-    return res.json(), res.status_code
+            # Success responses (2xx)
+            if 200 <= res.status_code < 300:
+
+                # Only parse JSON if there actually is a body
+                if res.content:
+                    return res.json(), res.status_code
+
+                return None, res.status_code
+
+            logger.warning(
+                "PATCH failed (attempt %s/%s) | status=%s | body=%s",
+                attempt,
+                retry_count,
+                res.status_code,
+                res.text,
+            )
+
+        except ValueError:
+            # JSON decode error
+            logger.exception(
+                "Invalid JSON response for step run ID %s (attempt %s)",
+                step_run_id,
+                attempt,
+            )
+
+        except Exception:
+            # Network errors, timeouts, etc.
+            logger.exception(
+                "PATCH request crashed for step run ID %s (attempt %s)",
+                step_run_id,
+                attempt,
+            )
+
+        attempt += 1
+
+    return {
+        "error": "Patch call failed after retries",
+        "step_run_id": step_run_id,
+    }, None
