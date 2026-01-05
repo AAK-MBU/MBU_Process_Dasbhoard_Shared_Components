@@ -1,6 +1,7 @@
 """ Functions to interact with processes """
 
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -10,48 +11,131 @@ def find_process_id_and_steps(client, process_name: str):
     Look up a process and return:
       • its ID
       • its list of process steps
-
-    Args:
-        client (ProcessDashboardClient): The shared API client.
-        process_name (str): The name of the process.
-
-    Returns:
-        tuple: (process_id (str|None), steps (list))
     """
 
-    logger.info("Inside find_process_id_and_steps() - finding for process_name: %s", process_name)
+    logger.info(
+        "Inside find_process_id_and_steps() - finding for process_name: %s",
+        process_name,
+    )
 
-    res = client.get("processes/?page=1&size=100")
+    retry_count = 3
+    attempt = 1
 
-    items = res.json().get("items", [])
+    while attempt <= retry_count:
+        try:
+            res = client.get(
+                "processes/?page=1&size=100",
+                timeout=10,
+            )
 
-    for row in items:
-        if row.get("name") == process_name:
-            return row.get("id"), row.get("steps")
+            if 200 <= res.status_code < 300:
 
-    return None, []
+                if not res.content:
+                    raise ValueError("Empty response body")
+
+                items = res.json().get("items", [])
+
+                for row in items:
+                    if row.get("name") == process_name:
+                        return row.get("id"), row.get("steps", [])
+
+                # Valid response, but process not found
+                logger.warning(
+                    "Process '%s' not found (attempt %s/%s)",
+                    process_name,
+                    attempt,
+                    retry_count,
+                )
+
+                return None, []
+
+            logger.warning(
+                "GET processes failed (attempt %s/%s) | status=%s | body=%s",
+                attempt,
+                retry_count,
+                res.status_code,
+                res.text,
+            )
+
+        except ValueError as exc:
+            logger.exception(
+                "Invalid JSON or response when fetching processes (attempt %s): %s",
+                attempt,
+                exc,
+            )
+
+        except Exception:
+            logger.exception(
+                "GET processes request crashed (attempt %s)",
+                attempt,
+            )
+
+        time.sleep(1)
+        attempt += 1
+
+    # Total failure
+    raise RuntimeError(
+        f"Could not fetch process list or find process '{process_name}' after retries"
+    )
 
 
 def get_dashboard_process_id(client, process_name: str) -> str:
     """
     Fetch the ID of a process by its name.
-
-    Args:
-        client (ProcessDashboardClient): API client.
-        process_name (str): Process name.
-
-    Returns:
-        str: The process ID.
-
-    Raises:
-        StopIteration: If no matching process is found.
     """
 
     logger.info("Retrieving process ID for name: %s", process_name)
 
-    res = client.get("processes/?include_deleted=false")
-    items = res.json().get("items", [])
+    retry_count = 3
+    attempt = 1
 
-    process = next(p for p in items if p["name"] == process_name)
+    while attempt <= retry_count:
+        try:
+            res = client.get(
+                "processes/?include_deleted=false",
+                timeout=10,
+            )
 
-    return process["id"]
+            if 200 <= res.status_code < 300:
+
+                if not res.content:
+                    raise ValueError("Empty response body")
+
+                items = res.json().get("items", [])
+
+                for process in items:
+                    if process.get("name") == process_name:
+                        return process.get("id")
+
+                # API worked, but process does not exist
+                raise LookupError(
+                    f"Process '{process_name}' not found in dashboard"
+                )
+
+            logger.warning(
+                "GET processes failed (attempt %s/%s) | status=%s | body=%s",
+                attempt,
+                retry_count,
+                res.status_code,
+                res.text,
+            )
+
+        except (ValueError, LookupError) as exc:
+            logger.exception(
+                "Invalid response when fetching process ID (attempt %s): %s",
+                attempt,
+                exc,
+            )
+
+        except Exception:
+            logger.exception(
+                "GET process ID request crashed (attempt %s)",
+                attempt,
+            )
+
+        time.sleep(1)
+        attempt += 1
+
+    raise RuntimeError(
+        f"Could not retrieve process ID for '{process_name}' after retries"
+    )
